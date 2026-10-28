@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react'
+import FlightMap from './FlightMap'
 import {
   Activity, ArrowDownRight, ArrowUpRight, Bell, ChevronDown, CircleHelp,
   Compass, Crosshair, Globe2, Layers3, MapPin, Menu, Plane, Radio,
@@ -91,8 +92,9 @@ function App() {
             <div className="section-heading"><div><h2>Global airspace</h2><p>Explore the movement of aircraft across the world</p></div><div className="map-heading-actions"><span className="demo-tag"><span /> DEMO DATA</span><button className="icon-button" aria-label="Center map" onClick={() => setSelectedFlight('BAW287')}><Crosshair size={17} /></button></div></div>
             <div className="map-layout">
               <div className="map-canvas">
+                <FlightMap showRoutes={showRoutes} showLabels={showLabels} onSelectFlight={setSelectedFlight} />
                 <div className="map-grid" />
-                <svg className="map-art" viewBox="0 0 900 420" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                <svg className="map-art" viewBox="0 0 900 420" preserveAspectRatio="xMidYMid slice" aria-hidden="true" style={{ display: "none" }}>
                   <defs><pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".8" fill="#2d465c" opacity=".65" /></pattern></defs>
                   <rect width="900" height="420" fill="url(#dots)" />
                   <g fill="#152a3a" stroke="#294458" strokeWidth="1.2" opacity=".9">
