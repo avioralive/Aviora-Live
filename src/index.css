@@ -17,3 +17,5 @@
 .leaflet-demo-zoom button:hover{background:#19334a;color:#8cddff}
 .map-zoom{display:none}
 @media(max-width:540px){.real-flight-map{min-height:320px}.real-flight-map .leaflet-control-attribution{font-size:8px!important}}
+
+.map-top-controls,.layers-panel,.map-legend,.map-attribution{z-index:1002}
