@@ -86,7 +86,7 @@ export default function App() {
   useEffect(() => {
     const controller = new AbortController()
     void refresh(controller.signal)
-    const timer = window.setInterval(() => void refresh(), 30000)
+    const timer = window.setInterval(() => void refresh(), 1000)
     return () => {
       controller.abort()
       window.clearInterval(timer)
@@ -166,7 +166,7 @@ export default function App() {
           <StatCard label="Aircraft in area" value={loading && !lastUpdated ? '…' : aircraft.length.toLocaleString()} detail="positioned aircraft returned" icon={<Plane size={17} />} />
           <StatCard label="Not on ground" value={loading && !lastUpdated ? '…' : airborne.toLocaleString()} detail="from current live snapshot" icon={<Activity size={17} />} />
           <StatCard label="Aircraft with altitude" value={averageAltitude.length.toLocaleString()} detail="valid altitude reports" icon={<Radio size={17} />} />
-          <StatCard label="Refresh interval" value="30 sec" detail={lastUpdated ? 'last update ' + new Date(lastUpdated).toLocaleTimeString() : 'waiting for first response'} icon={<Clock3 size={17} />} />
+          <StatCard label="Refresh interval" value="1 sec" detail={lastUpdated ? 'last update ' + new Date(lastUpdated).toLocaleTimeString() : 'waiting for first response'} icon={<Clock3 size={17} />} />
         </section>
 
         <section className="map-section">
