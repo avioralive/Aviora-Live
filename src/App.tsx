@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Activity, AlertCircle, ArrowDownUp, ArrowUpRight, CheckCircle2, Clock3, Download, Plane, Radio, RefreshCw, Search, Star, UserRound, Wifi } from 'lucide-react'
 import FlightMap, { type LiveAircraft } from './FlightMap'
+import { createClient, type User } from '@supabase/supabase-js'
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined
+const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null
 
 type FeedResponse = { ac?: LiveAircraft[]; total?: number; now?: number; source?: string; error?: string }
 
@@ -56,9 +61,57 @@ export default function App() {
   const [error, setError] = useState('')
   const [lastUpdated, setLastUpdated] = useState<number | null>(null)
   const [accountOpen, setAccountOpen] = useState(false)
+  const [accountEmail, setAccountEmail] = useState('')
+  const [accountCode, setAccountCode] = useState('')
+  const [accountStage, setAccountStage] = useState<'email' | 'code'>('email')
+  const [accountMessage, setAccountMessage] = useState('')
+  const [accountBusy, setAccountBusy] = useState(false)
+  const [accountUser, setAccountUser] = useState<User | null>(null)
   const requestInFlight = useRef(false)
   const nextRetryAt = useRef(0)
   const failureCount = useRef(0)
+
+  useEffect(() => {
+    if (!supabase) return
+    void supabase.auth.getUser().then(({ data }) => setAccountUser(data.user))
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => setAccountUser(session?.user ?? null))
+    return () => listener.subscription.unsubscribe()
+  }, [])
+
+  const requestAccountCode = useCallback(async () => {
+    if (!supabase) { setAccountMessage('Account sign-in is not configured yet. Please try again later.'); return }
+    if (!accountEmail.trim()) { setAccountMessage('Enter your email address first.'); return }
+    setAccountBusy(true); setAccountMessage('')
+    try {
+      const { error } = await supabase.auth.signInWithOtp({ email: accountEmail.trim(), options: { shouldCreateUser: true } })
+      if (error) throw error
+      setAccountStage('code')
+      setAccountMessage('We sent a verification code to your email. Check your inbox and spam folder.')
+    } catch (err) { setAccountMessage(err instanceof Error ? err.message : 'Could not send the verification code.') }
+    finally { setAccountBusy(false) }
+  }, [accountEmail])
+
+  const verifyAccountCode = useCallback(async () => {
+    if (!supabase) { setAccountMessage('Account sign-in is not configured yet. Please try again later.'); return }
+    if (!accountCode.trim()) { setAccountMessage('Enter the verification code from your email.'); return }
+    setAccountBusy(true); setAccountMessage('')
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({ email: accountEmail.trim(), token: accountCode.trim(), type: 'email' })
+      if (error) throw error
+      setAccountUser(data.user)
+      setAccountMessage('You are signed in.')
+      setAccountCode('')
+    } catch (err) { setAccountMessage(err instanceof Error ? err.message : 'That code could not be verified. Try again.') }
+    finally { setAccountBusy(false) }
+  }, [accountEmail, accountCode])
+
+  const signOutAccount = useCallback(async () => {
+    if (!supabase) return
+    setAccountBusy(true)
+    const { error } = await supabase.auth.signOut()
+    setAccountMessage(error ? error.message : 'You have signed out.')
+    setAccountBusy(false)
+  }, [])
 
   const updateCenter = useCallback((next: [number, number]) => {
     setCenter((current) => Math.abs(current[0] - next[0]) < 0.25 && Math.abs(current[1] - next[1]) < 0.25 ? current : next)
@@ -164,7 +217,7 @@ export default function App() {
     <main className="main-content">
       <header className="topbar">
         <div className="breadcrumb">Aviora Live <span>/</span> <strong>Live overview</strong></div>
-        <div className="topbar-actions"><div className="system-status"><span className={error ? '' : 'status-dot'} /> {statusText}</div><button className="icon-button" aria-label="Refresh live aircraft" title="Refresh live aircraft" onClick={() => void refresh()}><RefreshCw size={17} /></button><button className="account-button" aria-label="Account" title="Account" aria-expanded={accountOpen} onClick={() => setAccountOpen((open) => !open)}><UserRound size={18} /><span>Account</span></button>{accountOpen && <div className="account-popover" role="dialog" aria-label="Account information"><div className="account-popover-heading"><span className="account-popover-icon"><UserRound size={20} /></span><div><strong>Aviora account</strong><small>Personalise your tracking</small></div></div><p>Account sign-in is not available yet. Your saved aircraft stay on this device in this browser.</p><button className="outline-button" onClick={() => { setAccountOpen(false); setTrafficFilter("favorites"); document.querySelector(".activity-section")?.scrollIntoView({ behavior: "smooth", block: "start" }) }}><Star size={14} /> View saved aircraft</button></div>}</div>
+        <div className="topbar-actions"><div className="system-status"><span className={error ? '' : 'status-dot'} /> {statusText}</div><button className="icon-button" aria-label="Refresh live aircraft" title="Refresh live aircraft" onClick={() => void refresh()}><RefreshCw size={17} /></button><button className="account-button" aria-label="Account" title="Account" aria-expanded={accountOpen} onClick={() => setAccountOpen((open) => !open)}><UserRound size={18} /><span>Account</span></button>{accountOpen && <div className="account-popover" role="dialog" aria-label="Account information"><div className="account-popover-heading"><span className="account-popover-icon"><UserRound size={20} /></span><div><strong>Aviora account</strong><small>{accountUser ? "Signed in" : "Sign in or create an account"}</small></div></div>{accountUser ? <><p>Signed in as <strong>{accountUser.email}</strong></p><button className="outline-button" disabled={accountBusy} onClick={() => void signOutAccount()}>{accountBusy ? "Please wait…" : "Sign out"}</button></> : <><p>Use your email to receive a one-time verification code.</p><form onSubmit={(event) => { event.preventDefault(); void (accountStage === "email" ? requestAccountCode() : verifyAccountCode()) }}><label style={{ display: "block", fontSize: 12, marginBottom: 5 }} htmlFor="account-email">Email address</label><input id="account-email" type="email" autoComplete="email" required value={accountEmail} onChange={(event) => setAccountEmail(event.target.value)} disabled={accountBusy || accountStage === "code"} style={{ width: "100%", boxSizing: "border-box", marginBottom: 10, padding: "10px 12px", borderRadius: 8, border: "1px solid #d6dce5", background: "white", color: "#172033" }} />{accountStage === "code" && <><label style={{ display: "block", fontSize: 12, marginBottom: 5 }} htmlFor="account-code">Verification code</label><input id="account-code" inputMode="numeric" autoComplete="one-time-code" required value={accountCode} onChange={(event) => setAccountCode(event.target.value)} style={{ width: "100%", boxSizing: "border-box", marginBottom: 10, padding: "10px 12px", borderRadius: 8, border: "1px solid #d6dce5", background: "white", color: "#172033" }} /></>}<button className="outline-button" type="submit" disabled={accountBusy} style={{ width: "100%", justifyContent: "center" }}>{accountBusy ? "Please wait…" : accountStage === "email" ? "Email me a code" : "Verify and sign in"}</button>{accountStage === "code" && <button type="button" className="outline-button" style={{ width: "100%", justifyContent: "center", marginTop: 8 }} onClick={() => { setAccountStage("email"); setAccountCode(""); setAccountMessage("") }}>Use a different email</button>}</form></>}{accountMessage && <p role="status" style={{ fontSize: 12, overflowWrap: "anywhere" }}>{accountMessage}</p>}<button className="outline-button" onClick={() => { setAccountOpen(false); setTrafficFilter("favorites"); document.querySelector(".activity-section")?.scrollIntoView({ behavior: "smooth", block: "start" }) }}><Star size={14} /> View saved aircraft</button></div>}</div>
       </header>
 
       <div className="page-content">
