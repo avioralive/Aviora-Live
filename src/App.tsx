@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Activity, AlertCircle, ArrowDownUp, ArrowUpRight, CheckCircle2, Clock3, Download, Plane, Radio, RefreshCw, Search, Star, Wifi } from 'lucide-react'
+import { Activity, AlertCircle, ArrowDownUp, ArrowUpRight, CheckCircle2, Clock3, Download, Plane, Radio, RefreshCw, Search, Star, UserRound, Wifi } from 'lucide-react'
 import FlightMap, { type LiveAircraft } from './FlightMap'
 
 type FeedResponse = { ac?: LiveAircraft[]; total?: number; now?: number; source?: string; error?: string }
@@ -28,6 +28,7 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [lastUpdated, setLastUpdated] = useState<number | null>(null)
+  const [accountOpen, setAccountOpen] = useState(false)
 
   const updateCenter = useCallback((next: [number, number]) => {
     setCenter((current) => Math.abs(current[0] - next[0]) < 0.25 && Math.abs(current[1] - next[1]) < 0.25 ? current : next)
@@ -126,7 +127,7 @@ export default function App() {
     <main className="main-content">
       <header className="topbar">
         <div className="breadcrumb">Aviora Live <span>/</span> <strong>Live overview</strong></div>
-        <div className="topbar-actions"><div className="system-status"><span className={error ? '' : 'status-dot'} /> {statusText}</div><button className="icon-button" aria-label="Refresh live aircraft" title="Refresh live aircraft" onClick={() => void refresh()}><RefreshCw size={17} /></button><div className="top-avatar">A</div></div>
+        <div className="topbar-actions"><div className="system-status"><span className={error ? '' : 'status-dot'} /> {statusText}</div><button className="icon-button" aria-label="Refresh live aircraft" title="Refresh live aircraft" onClick={() => void refresh()}><RefreshCw size={17} /></button><button className="account-button" aria-label="Account" title="Account" aria-expanded={accountOpen} onClick={() => setAccountOpen((open) => !open)}><UserRound size={18} /><span>Account</span></button>{accountOpen && <div className="account-popover" role="dialog" aria-label="Account information"><div className="account-popover-heading"><span className="account-popover-icon"><UserRound size={20} /></span><div><strong>Aviora account</strong><small>Personalise your tracking</small></div></div><p>Account sign-in is not available yet. Your saved aircraft stay on this device in this browser.</p><button className="outline-button" onClick={() => { setAccountOpen(false); setTrafficFilter("favorites"); document.querySelector(".activity-section")?.scrollIntoView({ behavior: "smooth", block: "start" }) }}><Star size={14} /> View saved aircraft</button></div>}</div>
       </header>
 
       <div className="page-content">
