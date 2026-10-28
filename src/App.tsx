@@ -15,6 +15,33 @@ function callsign(plane: LiveAircraft) {
   return (plane.flight || plane.hex).trim() || plane.hex
 }
 
+const AIRLINE_BY_PREFIX: Record<string, { name: string; domain: string }> = {
+  EZY: { name: 'easyJet', domain: 'easyjet.com' },
+  BAW: { name: 'British Airways', domain: 'britishairways.com' },
+  RYR: { name: 'Ryanair', domain: 'ryanair.com' },
+  AFR: { name: 'Air France', domain: 'airfrance.com' },
+  DLH: { name: 'Lufthansa', domain: 'lufthansa.com' },
+  KLM: { name: 'KLM', domain: 'klm.com' },
+  UAE: { name: 'Emirates', domain: 'emirates.com' },
+  QTR: { name: 'Qatar Airways', domain: 'qatarairways.com' },
+  THY: { name: 'Turkish Airlines', domain: 'turkishairlines.com' },
+  UAL: { name: 'United Airlines', domain: 'united.com' },
+  AAL: { name: 'American Airlines', domain: 'aa.com' },
+  DAL: { name: 'Delta Air Lines', domain: 'delta.com' },
+  WZZ: { name: 'Wizz Air', domain: 'wizzair.com' },
+  EIN: { name: 'Aer Lingus', domain: 'aerlingus.com' },
+  VLG: { name: 'Vueling', domain: 'vueling.com' },
+  VIR: { name: 'Virgin Atlantic', domain: 'virginatlantic.com' },
+  SAS: { name: 'Scandinavian Airlines', domain: 'flysas.com' },
+  TUI: { name: 'TUI Airways', domain: 'tui.co.uk' },
+}
+function airlineFor(plane: LiveAircraft) {
+  const flight = callsign(plane).toUpperCase()
+  const prefix = flight.match(/^[A-Z]{3}/)?.[0]
+  return prefix ? AIRLINE_BY_PREFIX[prefix] : undefined
+}
+
+
 export default function App() {
   const [aircraft, setAircraft] = useState<LiveAircraft[]>([])
   const [selectedHex, setSelectedHex] = useState<string | null>(null)
@@ -153,7 +180,7 @@ export default function App() {
             </div>
             <aside className="flight-detail">
               {selected ? <>
-                <div className="detail-header"><div><span className="detail-kicker">LIVE AIRCRAFT</span><h3>{callsign(selected)}</h3></div><span className="live-pill"><i /> LIVE</span></div>
+                <div className="detail-header"><div className="detail-airline-heading">{airlineFor(selected) && <img className="airline-logo-large" src={"https://www.google.com/s2/favicons?domain=" + airlineFor(selected)!.domain + "&sz=64"} alt={airlineFor(selected)!.name + " logo"} loading="lazy"} onError={(event) => { event.currentTarget.style.display = "none" }} />}<div><span className="detail-kicker">LIVE AIRCRAFT</span><h3>{callsign(selected)}</h3>{airlineFor(selected) && <span className="airline-name">{airlineFor(selected)!.name}</span>}</div></div><span className="live-pill"><i /> LIVE</span></div>
                 <div className="detail-actions"><button className={'outline-button favorite-button' + (favorites.includes(selected.hex) ? ' is-favorite' : '')} onClick={() => toggleFavorite(selected.hex)} aria-pressed={favorites.includes(selected.hex)}><Star size={14} fill={favorites.includes(selected.hex) ? 'currentColor' : 'none'} /> {favorites.includes(selected.hex) ? 'Saved aircraft' : 'Save aircraft'}</button></div>
                 <div className="route-display"><div className="airport-code">{selected.hex.toUpperCase()}<small>ICAO HEX</small></div><div className="route-line"><Plane size={16} /><span /></div><div className="airport-code airport-end">{selected.r || 'Unknown'}<small>REGISTRATION</small></div></div>
                 <div className="detail-airline">{selected.t || 'Aircraft type not reported'}<span>{selected.category ? 'Category ' + selected.category : 'Type data supplied when available'}</span></div>
@@ -175,7 +202,7 @@ export default function App() {
           <div className="table-wrap"><table><thead><tr><th>SAVED</th><th>CALLSIGN / ICAO</th><th>REGISTRATION</th><th>TYPE</th><th>ALTITUDE</th><th>SPEED</th><th>HEADING</th></tr></thead><tbody>
             {visibleAircraft.slice(0, 100).map((plane) => <tr key={plane.hex} className={selectedHex === plane.hex ? 'selected-row' : ''} onClick={() => setSelectedHex(plane.hex)} tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter') setSelectedHex(plane.hex) }}>
               <td><button className={'star-button' + (favorites.includes(plane.hex) ? ' is-favorite' : '')} title={favorites.includes(plane.hex) ? 'Remove saved aircraft' : 'Save aircraft'} aria-label={favorites.includes(plane.hex) ? 'Remove saved aircraft ' + callsign(plane) : 'Save aircraft ' + callsign(plane)} aria-pressed={favorites.includes(plane.hex)} onClick={(event) => { event.stopPropagation(); toggleFavorite(plane.hex) }}><Star size={14} fill={favorites.includes(plane.hex) ? 'currentColor' : 'none'} /></button></td>
-              <td><div className="flight-id"><span className="airline-mark blue"><Plane size={14} /></span><div><strong>{callsign(plane)}</strong><small>{plane.hex.toUpperCase()}</small></div></div></td><td>{plane.r || '—'}</td><td>{plane.t || '—'}</td><td>{formatAltitude(plane.alt_baro)}</td><td>{formatSpeed(plane.gs)}</td><td>{typeof plane.track === 'number' ? Math.round(plane.track) + '°' : '—'}</td>
+              <td><div className="flight-id">{airlineFor(plane) ? <img className="airline-logo-table" src={"https://www.google.com/s2/favicons?domain=" + airlineFor(plane)!.domain + "&sz=64"} alt={airlineFor(plane)!.name + " logo"} loading="lazy" onError={(event) => { event.currentTarget.style.display = "none" }} /> : <span className="airline-mark blue"><Plane size={14} /></span>}<div><strong>{callsign(plane)}</strong><small>{plane.hex.toUpperCase()}</small></div></div></td><td>{plane.r || '—'}</td><td>{plane.t || '—'}</td><td>{formatAltitude(plane.alt_baro)}</td><td>{formatSpeed(plane.gs)}</td><td>{typeof plane.track === 'number' ? Math.round(plane.track) + '°' : '—'}</td>
             </tr>)}
             {!loading && visibleAircraft.length === 0 && <tr><td colSpan={7} className="empty-state">{error ? 'Live data could not be loaded.' : query ? 'No live aircraft match that search.' : 'No aircraft positions reported in this area. Pan the map or zoom out.'}</td></tr>}
           </tbody></table></div>
