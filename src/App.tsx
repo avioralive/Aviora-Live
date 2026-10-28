@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Activity, AlertCircle, ArrowUpRight, CheckCircle2, Clock3, Plane, Radio, RefreshCw, Search, Wifi } from 'lucide-react'
+import { Activity, AlertCircle, ArrowDownUp, ArrowUpRight, CheckCircle2, Clock3, Download, Plane, Radio, RefreshCw, Search, Star, Wifi } from 'lucide-react'
 import FlightMap, { type LiveAircraft } from './FlightMap'
 
 type FeedResponse = { ac?: LiveAircraft[]; total?: number; now?: number; source?: string; error?: string }
@@ -20,6 +20,11 @@ export default function App() {
   const [selectedHex, setSelectedHex] = useState<string | null>(null)
   const [center, setCenter] = useState<[number, number]>([51.5, -0.12])
   const [query, setQuery] = useState('')
+  const [trafficFilter, setTrafficFilter] = useState<'all' | 'airborne' | 'ground' | 'favorites'>('all')
+  const [sortBy, setSortBy] = useState<'callsign' | 'altitude' | 'speed'>('callsign')
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('aviora-favorite-aircraft') || '[]') as string[] } catch { return [] }
+  })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [lastUpdated, setLastUpdated] = useState<number | null>(null)
@@ -60,9 +65,40 @@ export default function App() {
     }
   }, [refresh])
 
-  const visibleAircraft = useMemo(() => aircraft.filter((plane) => [
-    callsign(plane), plane.hex, plane.r || '', plane.t || '', plane.squawk || ''
-  ].some((value) => value.toLowerCase().includes(query.toLowerCase().trim()))), [aircraft, query])
+  useEffect(() => {
+    try { localStorage.setItem('aviora-favorite-aircraft', JSON.stringify(favorites)) } catch { /* Storage may be unavailable in private browsing. */ }
+  }, [favorites])
+
+  const toggleFavorite = useCallback((hex: string) => {
+    setFavorites((current) => current.includes(hex) ? current.filter((item) => item !== hex) : [...current, hex])
+  }, [])
+
+  const visibleAircraft = useMemo(() => aircraft.filter((plane) => {
+    const matchesQuery = [callsign(plane), plane.hex, plane.r || '', plane.t || '', plane.squawk || '']
+      .some((value) => value.toLowerCase().includes(query.toLowerCase().trim()))
+    const matchesFilter = trafficFilter === 'all' ||
+      (trafficFilter === 'airborne' && plane.alt_baro !== 'ground') ||
+      (trafficFilter === 'ground' && plane.alt_baro === 'ground') ||
+      (trafficFilter === 'favorites' && favorites.includes(plane.hex))
+    return matchesQuery && matchesFilter
+  }).sort((a, b) => {
+    if (sortBy === 'altitude') return (typeof b.alt_baro === 'number' ? b.alt_baro : -1) - (typeof a.alt_baro === 'number' ? a.alt_baro : -1)
+    if (sortBy === 'speed') return (b.gs ?? -1) - (a.gs ?? -1)
+    return callsign(a).localeCompare(callsign(b))
+  }), [aircraft, query, trafficFilter, favorites, sortBy])
+
+  const exportCsv = useCallback(() => {
+    const fields = ['callsign', 'icao_hex', 'registration', 'type', 'latitude', 'longitude', 'altitude_ft', 'ground_speed_kt', 'heading_deg', 'squawk', 'position_age_seconds']
+    const rows = visibleAircraft.map((plane) => [callsign(plane), plane.hex, plane.r || '', plane.t || '', plane.lat, plane.lon, plane.alt_baro ?? '', plane.gs ?? '', plane.track ?? '', plane.squawk || '', plane.seen_pos ?? ''])
+    const csvCell = (value: string | number) => '"' + String(value).replace(/"/g, '""') + '"'
+    const csv = [fields, ...rows].map((row) => row.map(csvCell).join(',')).join('\\r\\n')
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'aviora-live-aircraft-' + new Date().toISOString().slice(0, 10) + '.csv'
+    link.click()
+    URL.revokeObjectURL(url)
+  }, [visibleAircraft])
   const selected = aircraft.find((plane) => plane.hex === selectedHex) || null
   const airborne = aircraft.filter((plane) => plane.alt_baro !== 'ground').length
   const averageAltitude = aircraft.filter((plane) => typeof plane.alt_baro === 'number')
@@ -117,6 +153,7 @@ export default function App() {
             <aside className="flight-detail">
               {selected ? <>
                 <div className="detail-header"><div><span className="detail-kicker">LIVE AIRCRAFT</span><h3>{callsign(selected)}</h3></div><span className="live-pill"><i /> LIVE</span></div>
+                <div className="detail-actions"><button className={'outline-button favorite-button' + (favorites.includes(selected.hex) ? ' is-favorite' : '')} onClick={() => toggleFavorite(selected.hex)} aria-pressed={favorites.includes(selected.hex)}><Star size={14} fill={favorites.includes(selected.hex) ? 'currentColor' : 'none'} /> {favorites.includes(selected.hex) ? 'Saved aircraft' : 'Save aircraft'}</button></div>
                 <div className="route-display"><div className="airport-code">{selected.hex.toUpperCase()}<small>ICAO HEX</small></div><div className="route-line"><Plane size={16} /><span /></div><div className="airport-code airport-end">{selected.r || 'Unknown'}<small>REGISTRATION</small></div></div>
                 <div className="detail-airline">{selected.t || 'Aircraft type not reported'}<span>{selected.category ? 'Category ' + selected.category : 'Type data supplied when available'}</span></div>
                 <div className="detail-metrics"><div><span>ALTITUDE</span><strong>{formatAltitude(selected.alt_baro)}</strong></div><div><span>GROUND SPEED</span><strong>{formatSpeed(selected.gs)}</strong></div><div><span>HEADING</span><strong>{typeof selected.track === 'number' ? Math.round(selected.track) + '°' : '—'}</strong></div><div><span>SQUAWK</span><strong>{selected.squawk || '—'}</strong></div></div>
@@ -127,14 +164,21 @@ export default function App() {
           </div>
         </section>
 
-        <section className="activity-section"><div className="section-heading activity-heading"><div><h2>Aircraft in this area</h2><p>Live transponder reports · search or select a row for details</p></div><span className="text-button">{visibleAircraft.length.toLocaleString()} aircraft</span></div>
-          <div className="table-wrap"><table><thead><tr><th>CALLSIGN / ICAO</th><th>REGISTRATION</th><th>TYPE</th><th>ALTITUDE</th><th>SPEED</th><th>HEADING</th></tr></thead><tbody>
+        <section className="activity-section"><div className="section-heading activity-heading"><div><h2>Aircraft in this area</h2><p>Live transponder reports · search or select a row for details</p></div><button className="outline-button export-button" onClick={exportCsv}><Download size={14} /> Export CSV</button></div>
+          <div className="aircraft-tools" aria-label="Aircraft list filters">
+            <div className="filter-tabs" role="group" aria-label="Filter aircraft">
+              {([{ value: 'all', label: 'All traffic' }, { value: 'airborne', label: 'Airborne' }, { value: 'ground', label: 'On ground' }, { value: 'favorites', label: '★ Saved' }] as const).map((item) => <button key={item.value} className={trafficFilter === item.value ? 'filter-tab filter-tab-active' : 'filter-tab'} onClick={() => setTrafficFilter(item.value)} aria-pressed={trafficFilter === item.value}>{item.label}</button>)}
+            </div>
+            <label className="sort-control"><ArrowDownUp size={14} /><span>Sort</span><select value={sortBy} onChange={(event) => setSortBy(event.target.value as 'callsign' | 'altitude' | 'speed')}><option value="callsign">Callsign A–Z</option><option value="altitude">Highest altitude</option><option value="speed">Fastest speed</option></select></label>
+          </div>
+          <div className="table-wrap"><table><thead><tr><th>SAVED</th><th>CALLSIGN / ICAO</th><th>REGISTRATION</th><th>TYPE</th><th>ALTITUDE</th><th>SPEED</th><th>HEADING</th></tr></thead><tbody>
             {visibleAircraft.slice(0, 100).map((plane) => <tr key={plane.hex} className={selectedHex === plane.hex ? 'selected-row' : ''} onClick={() => setSelectedHex(plane.hex)} tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter') setSelectedHex(plane.hex) }}>
+              <td><button className={'star-button' + (favorites.includes(plane.hex) ? ' is-favorite' : '')} title={favorites.includes(plane.hex) ? 'Remove saved aircraft' : 'Save aircraft'} aria-label={favorites.includes(plane.hex) ? 'Remove saved aircraft ' + callsign(plane) : 'Save aircraft ' + callsign(plane)} aria-pressed={favorites.includes(plane.hex)} onClick={(event) => { event.stopPropagation(); toggleFavorite(plane.hex) }}><Star size={14} fill={favorites.includes(plane.hex) ? 'currentColor' : 'none'} /></button></td>
               <td><div className="flight-id"><span className="airline-mark blue"><Plane size={14} /></span><div><strong>{callsign(plane)}</strong><small>{plane.hex.toUpperCase()}</small></div></div></td><td>{plane.r || '—'}</td><td>{plane.t || '—'}</td><td>{formatAltitude(plane.alt_baro)}</td><td>{formatSpeed(plane.gs)}</td><td>{typeof plane.track === 'number' ? Math.round(plane.track) + '°' : '—'}</td>
             </tr>)}
-            {!loading && visibleAircraft.length === 0 && <tr><td colSpan={6} className="empty-state">{error ? 'Live data could not be loaded.' : query ? 'No live aircraft match that search.' : 'No aircraft positions reported in this area. Pan the map or zoom out.'}</td></tr>}
+            {!loading && visibleAircraft.length === 0 && <tr><td colSpan={7} className="empty-state">{error ? 'Live data could not be loaded.' : query ? 'No live aircraft match that search.' : 'No aircraft positions reported in this area. Pan the map or zoom out.'}</td></tr>}
           </tbody></table></div>
-          <div className="table-footer"><span>Showing {Math.min(visibleAircraft.length, 100)} of {visibleAircraft.length} returned aircraft · 250 NM radius</span><span><span className="footer-dot" /> {lastUpdated ? 'Updated ' + new Date(lastUpdated).toLocaleTimeString() : 'Waiting for live feed'}</span></div>
+          <div className="table-footer"><span>Showing {Math.min(visibleAircraft.length, 100)} of {visibleAircraft.length} matching aircraft · 250 NM radius</span><span><span className="footer-dot" /> {lastUpdated ? 'Updated ' + new Date(lastUpdated).toLocaleTimeString() : 'Waiting for live feed'}</span></div>
         </section>
         <footer className="page-footer"><span>© 2026 Aviora Live</span><span>Live aircraft data: adsb.lol · Map data: OpenStreetMap</span><a href="https://github.com/avioralive/Aviora-Live" target="_blank" rel="noreferrer">Project repository <ArrowUpRight size={12} /></a></footer>
       </div>
