@@ -53,3 +53,17 @@
   .map-canvas,.real-flight-map{min-height:65vh}
 }
 @media(max-width:540px){.map-canvas,.real-flight-map{min-height:58vh}}
+
+
+/* Account menu and heading-aware aircraft markers */
+.topbar-actions{position:relative}
+.account-button{display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid var(--border-color,#26374a);border-radius:10px;background:var(--panel-bg,#111c2a);color:inherit;font:inherit;font-size:13px;cursor:pointer}
+.account-button:hover{border-color:#53bce9;background:rgba(83,188,233,.08)}
+.account-popover{position:absolute;right:0;top:calc(100% + 12px);z-index:1200;width:min(320px,calc(100vw - 32px));padding:18px;border:1px solid rgba(143,169,195,.22);border-radius:14px;background:#101b29;color:#edf4fb;box-shadow:0 18px 48px rgba(0,0,0,.38)}
+.account-popover-heading{display:flex;align-items:center;gap:12px}
+.account-popover-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:rgba(83,188,233,.12);color:#7bd4fa}
+.account-popover-heading strong,.account-popover-heading small{display:block}
+.account-popover-heading small{margin-top:3px;color:#8fa4ba;font-size:12px}
+.account-popover p{font-size:13px;line-height:1.55;color:#b5c4d4;margin:16px 0}
+.aircraft-map-icon{background:transparent!important;border:0!important}
+@media(max-width:540px){.account-button span{display:none}.account-button{padding:9px}}
