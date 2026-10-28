@@ -91,7 +91,7 @@ export default function App() {
     const fields = ['callsign', 'icao_hex', 'registration', 'type', 'latitude', 'longitude', 'altitude_ft', 'ground_speed_kt', 'heading_deg', 'squawk', 'position_age_seconds']
     const rows = visibleAircraft.map((plane) => [callsign(plane), plane.hex, plane.r || '', plane.t || '', plane.lat, plane.lon, plane.alt_baro ?? '', plane.gs ?? '', plane.track ?? '', plane.squawk || '', plane.seen_pos ?? ''])
     const csvCell = (value: string | number) => '"' + String(value).replace(/"/g, '""') + '"'
-    const csv = [fields, ...rows].map((row) => row.map(csvCell).join(',')).join('\\r\\n')
+    const csv = [fields, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n')
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }))
     const link = document.createElement('a')
     link.href = url
