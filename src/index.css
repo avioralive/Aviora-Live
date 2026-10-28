@@ -2,3 +2,18 @@
 
 /* Real interactive map */
 .real-flight-map{position:absolute;inset:0;width:100%;height:100%;min-height:320px;background:#0b1420}.real-flight-map .leaflet-tile-pane{filter:brightness(.58) saturate(.72) hue-rotate(165deg)}.real-flight-map .leaflet-control-attribution{background:#0b1522d9!important;color:#7890a4!important;font-size:9px}.real-flight-map .leaflet-control-attribution a{color:#91cde8!important}.real-flight-map .leaflet-control-zoom a{background:#0c1825!important;color:#d4e6f2!important;border-color:#293d50!important}.real-flight-map .leaflet-tooltip{background:#0b1825;border:1px solid #31516a;color:#e3f5ff;border-radius:5px;box-shadow:0 4px 15px #0005;font-size:10px}.real-flight-map .leaflet-tooltip:before{border-top-color:#31516a}
+
+/* Interactive Leaflet demo-map fixes */
+.map-grid{pointer-events:none}
+.real-flight-map{position:absolute;inset:0;width:100%;height:100%;min-height:320px;background:#0b1420;z-index:1}
+.real-flight-map .leaflet-tile-pane{filter:brightness(.72) saturate(.72) hue-rotate(165deg)}
+.real-flight-map .leaflet-control-attribution{background:#09131ddd!important;color:#8297aa!important;font-size:9px!important}
+.real-flight-map .leaflet-control-attribution a{color:#83cfee!important}
+.real-flight-map .leaflet-tooltip{background:#0d1a28;border:1px solid #2a4960;color:#e7f5ff;box-shadow:0 4px 14px #0005;border-radius:5px;font:11px 'DM Sans',sans-serif;padding:7px 9px}
+.real-flight-map .leaflet-tooltip:before{border-top-color:#2a4960}
+.leaflet-demo-zoom{position:absolute;z-index:1000;right:14px;bottom:48px;display:flex;flex-direction:column;overflow:hidden;border:1px solid #2a4053;border-radius:7px;box-shadow:0 4px 15px #0004}
+.leaflet-demo-zoom button{width:31px;height:31px;border:0;background:#0d1926;color:#d4e8f6;font-size:19px;line-height:1}
+.leaflet-demo-zoom button+button{border-top:1px solid #2a4053}
+.leaflet-demo-zoom button:hover{background:#19334a;color:#8cddff}
+.map-zoom{display:none}
+@media(max-width:540px){.real-flight-map{min-height:320px}.real-flight-map .leaflet-control-attribution{font-size:8px!important}}
