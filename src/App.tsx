@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Activity, AlertCircle, ArrowUpRight, CheckCircle2, Clock3, Plane, Radio, RefreshCw, Search, Wifi, WifiOff } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { Activity, AlertCircle, ArrowUpRight, CheckCircle2, Clock3, Plane, Radio, RefreshCw, Search, Wifi } from 'lucide-react'
 import FlightMap, { type LiveAircraft } from './FlightMap'
 
 type FeedResponse = { ac?: LiveAircraft[]; total?: number; now?: number; source?: string; error?: string }
@@ -142,6 +142,6 @@ export default function App() {
   </div>
 }
 
-function StatCard({ label, value, detail, icon }: { label: string; value: string; detail: string; icon: React.ReactNode }) {
+function StatCard({ label, value, detail, icon }: { label: string; value: string; detail: string; icon: ReactNode }) {
   return <div className="stat-card"><div className="stat-top"><span>{label}</span><span className="stat-icon">{icon}</span></div><div className="stat-value">{value}</div><div className="stat-bottom"><span>{detail}</span></div></div>
 }
