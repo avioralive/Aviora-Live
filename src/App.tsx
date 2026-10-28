@@ -77,7 +77,6 @@ export default function App() {
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return
       setError(err instanceof Error ? err.message : 'Could not load live aircraft.')
-      setAircraft([])
     } finally {
       if (!signal?.aborted) setLoading(false)
     }
@@ -86,7 +85,7 @@ export default function App() {
   useEffect(() => {
     const controller = new AbortController()
     void refresh(controller.signal)
-    const timer = window.setInterval(() => void refresh(), 1000)
+    const timer = window.setInterval(() => void refresh(), 10000)
     return () => {
       controller.abort()
       window.clearInterval(timer)
@@ -130,7 +129,7 @@ export default function App() {
   const selected = aircraft.find((plane) => plane.hex === selectedHex) || null
   const airborne = aircraft.filter((plane) => plane.alt_baro !== 'ground').length
   const averageAltitude = aircraft.filter((plane) => typeof plane.alt_baro === 'number')
-  const statusText = error ? 'Feed unavailable' : loading && !lastUpdated ? 'Connecting to live feed' : 'Live ADS-B feed'
+  const statusText = error ? (lastUpdated && aircraft.length ? 'Retrying feed · showing last data' : 'Feed unavailable') : loading && !lastUpdated ? 'Connecting to live feed' : 'Live ADS-B feed'
 
   return <div className="app-shell">
     <aside className="sidebar">
@@ -166,7 +165,7 @@ export default function App() {
           <StatCard label="Aircraft in area" value={loading && !lastUpdated ? '…' : aircraft.length.toLocaleString()} detail="positioned aircraft returned" icon={<Plane size={17} />} />
           <StatCard label="Not on ground" value={loading && !lastUpdated ? '…' : airborne.toLocaleString()} detail="from current live snapshot" icon={<Activity size={17} />} />
           <StatCard label="Aircraft with altitude" value={averageAltitude.length.toLocaleString()} detail="valid altitude reports" icon={<Radio size={17} />} />
-          <StatCard label="Refresh interval" value="1 sec" detail={lastUpdated ? 'last update ' + new Date(lastUpdated).toLocaleTimeString() : 'waiting for first response'} icon={<Clock3 size={17} />} />
+          <StatCard label="Feed check" value="10 sec" detail={lastUpdated ? 'last update ' + new Date(lastUpdated).toLocaleTimeString() : 'waiting for first response'} icon={<Clock3 size={17} />} />
         </section>
 
         <section className="map-section">
@@ -180,7 +179,7 @@ export default function App() {
             </div>
             <aside className="flight-detail">
               {selected ? <>
-                <div className="detail-header"><div className="detail-airline-heading">{airlineFor(selected) && <img className="airline-logo-large" src={"https://www.google.com/s2/favicons?domain=" + airlineFor(selected)!.domain + "&sz=64"} alt={airlineFor(selected)!.name + " logo"} loading="lazy"} onError={(event) => { event.currentTarget.style.display = "none" }} />}<div><span className="detail-kicker">LIVE AIRCRAFT</span><h3>{callsign(selected)}</h3>{airlineFor(selected) && <span className="airline-name">{airlineFor(selected)!.name}</span>}</div></div><span className="live-pill"><i /> LIVE</span></div>
+                <div className="detail-header"><div className="detail-airline-heading">{airlineFor(selected) && <img className="airline-logo-large" src={"https://www.google.com/s2/favicons?domain=" + airlineFor(selected)!.domain + "&sz=64"} alt={airlineFor(selected)!.name + " logo"} loading="lazy" onError={(event) => { event.currentTarget.style.display = "none" }} />}<div><span className="detail-kicker">LIVE AIRCRAFT</span><h3>{callsign(selected)}</h3>{airlineFor(selected) && <span className="airline-name">{airlineFor(selected)!.name}</span>}</div></div><span className="live-pill"><i /> LIVE</span></div>
                 <div className="detail-actions"><button className={'outline-button favorite-button' + (favorites.includes(selected.hex) ? ' is-favorite' : '')} onClick={() => toggleFavorite(selected.hex)} aria-pressed={favorites.includes(selected.hex)}><Star size={14} fill={favorites.includes(selected.hex) ? 'currentColor' : 'none'} /> {favorites.includes(selected.hex) ? 'Saved aircraft' : 'Save aircraft'}</button></div>
                 <div className="route-display"><div className="airport-code">{selected.hex.toUpperCase()}<small>ICAO HEX</small></div><div className="route-line"><Plane size={16} /><span /></div><div className="airport-code airport-end">{selected.r || 'Unknown'}<small>REGISTRATION</small></div></div>
                 <div className="detail-airline">{selected.t || 'Aircraft type not reported'}<span>{selected.category ? 'Category ' + selected.category : 'Type data supplied when available'}</span></div>
