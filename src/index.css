@@ -38,3 +38,18 @@
 .activity-section .table-wrap th:first-child,.activity-section .table-wrap td:first-child{width:44px;padding-right:3px}
 .activity-section .table-wrap td:first-child{padding-left:12px}
 @media(max-width:540px){.aircraft-tools{align-items:flex-start}.filter-tabs{width:100%}.filter-tab{padding:7px 8px}.sort-control{width:100%;justify-content:flex-start}.sort-control select{flex:1;max-width:none}.export-button{padding:7px 8px}}
+
+
+/* Large, map-first airspace view */
+.map-layout{grid-template-columns:minmax(0,1fr) 290px;min-height:min(76vh,820px)}
+.map-canvas,.real-flight-map{min-height:min(76vh,820px)}
+.flight-detail{overflow-y:auto}
+@media(min-width:1500px){
+  .map-layout{grid-template-columns:minmax(0,1fr) 300px;min-height:min(78vh,900px)}
+  .map-canvas,.real-flight-map{min-height:min(78vh,900px)}
+}
+@media(max-width:850px){
+  .map-layout{min-height:0}
+  .map-canvas,.real-flight-map{min-height:65vh}
+}
+@media(max-width:540px){.map-canvas,.real-flight-map{min-height:58vh}}
