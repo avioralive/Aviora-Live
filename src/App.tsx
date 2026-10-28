@@ -73,13 +73,13 @@ function App() {
       <main className="main-content">
         <header className="topbar">
           <div className="topbar-left"><button className="icon-button mobile-menu" aria-label="Open menu" onClick={() => setMobileNav(true)}><Menu size={20} /></button><div className="breadcrumb">Workspace <span>/</span> <strong>{activeNav}</strong></div></div>
-          <div className="topbar-actions"><div className="system-status"><span className="status-dot" /> Systems operational</div><button className="icon-button notification-button" aria-label="Notifications" onClick={() => setNotifications(!notifications)}><Bell size={18} /><i /></button><div className="top-avatar">A</div></div>
+          <div className="topbar-actions"><div className="system-status"><span className="status-dot" /> Demo environment</div><button className="icon-button notification-button" aria-label="Notifications" onClick={() => setNotifications(!notifications)}><Bell size={18} /><i /></button><div className="top-avatar">A</div></div>
         </header>
 
         {notifications && <div className="notice-popover"><button className="notice-close" onClick={() => setNotifications(false)} aria-label="Close"><X size={15} /></button><strong>You're all caught up</strong><p>This demo workspace doesn't have account notifications yet.</p></div>}
 
         <div className="page-content">
-          <section className="welcome-row"><div><div className="eyebrow"><span className="eyebrow-line" /> TUESDAY, OCTOBER 28, 2026</div><h1>Your window to the world.</h1><p className="page-subtitle">A clearer view of the skies, from takeoff to touchdown.</p></div><button className="outline-button" onClick={() => setLayersOpen(!layersOpen)}><SlidersHorizontal size={15} /> Customize view</button></section>
+          <section className="welcome-row"><div><div className="eyebrow"><span className="eyebrow-line" /> WEDNESDAY, OCTOBER 28, 2026</div><h1>Your window to the world.</h1><p className="page-subtitle">A clearer view of the skies, from takeoff to touchdown.</p></div><button className="outline-button" onClick={() => setLayersOpen(!layersOpen)}><SlidersHorizontal size={15} /> Customize view</button></section>
 
           <section className="stats-grid" aria-label="Air traffic overview">
             <StatCard label="Aircraft in view" value="24,681" change="+4.8%" trend="up" detail="vs. previous hour" icon={<Plane size={17} />} />
