@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Activity, AlertCircle, ArrowDownUp, ArrowUpRight, CheckCircle2, Clock3, Download, Plane, Radio, RefreshCw, Search, Star, UserRound, Wifi } from 'lucide-react'
 import FlightMap, { type LiveAircraft } from './FlightMap'
 
@@ -56,12 +56,17 @@ export default function App() {
   const [error, setError] = useState('')
   const [lastUpdated, setLastUpdated] = useState<number | null>(null)
   const [accountOpen, setAccountOpen] = useState(false)
+  const requestInFlight = useRef(false)
+  const nextRetryAt = useRef(0)
+  const failureCount = useRef(0)
 
   const updateCenter = useCallback((next: [number, number]) => {
     setCenter((current) => Math.abs(current[0] - next[0]) < 0.25 && Math.abs(current[1] - next[1]) < 0.25 ? current : next)
   }, [])
 
   const refresh = useCallback(async (signal?: AbortSignal) => {
+    if (requestInFlight.current || Date.now() < nextRetryAt.current) return
+    requestInFlight.current = true
     setLoading(true)
     try {
       const url = '/api/aircraft.php?lat=' + encodeURIComponent(center[0].toFixed(4)) + '&lon=' + encodeURIComponent(center[1].toFixed(4)) + '&dist=250'
@@ -72,12 +77,18 @@ export default function App() {
       const positioned = data.ac.filter((plane) => Number.isFinite(plane.lat) && Number.isFinite(plane.lon) && (plane.seen_pos == null || plane.seen_pos < 90))
       setAircraft(positioned)
       setLastUpdated(Date.now())
+      failureCount.current = 0
+      nextRetryAt.current = 0
       setError('')
       setSelectedHex((current) => current && positioned.some((plane) => plane.hex === current) ? current : positioned[0]?.hex ?? null)
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return
-      setError(err instanceof Error ? err.message : 'Could not load live aircraft.')
+      failureCount.current += 1
+      const retryDelay = Math.min(30000, 5000 * Math.pow(2, failureCount.current - 1))
+      nextRetryAt.current = Date.now() + retryDelay
+      setError((err instanceof Error ? err.message : 'Could not load live aircraft.') + ' Retrying in ' + Math.round(retryDelay / 1000) + 's.')
     } finally {
+      requestInFlight.current = false
       if (!signal?.aborted) setLoading(false)
     }
   }, [center])
