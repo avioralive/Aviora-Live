@@ -37,7 +37,23 @@ $context = stream_context_create([
   ],
   'ssl' => ['verify_peer' => true, 'verify_peer_name' => true]
 ]);
-$body = @file_get_contents($url, false, $context);
+$body = false;
+if (function_exists('curl_init')) {
+  $ch = curl_init($url);
+  curl_setopt_array($ch, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_CONNECTTIMEOUT => 5,
+    CURLOPT_TIMEOUT => 12,
+    CURLOPT_FOLLOWLOCATION => true,
+    CURLOPT_HTTPHEADER => ['Accept: application/json', 'User-Agent: AvioraLive/1.0 (live aircraft map)']
+  ]);
+  $body = curl_exec($ch);
+  $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+  curl_close($ch);
+  if ($body === false || $status < 200 || $status >= 300) $body = false;
+} else {
+  $body = @file_get_contents($url, false, $context);
+}
 if ($body === false) {
   http_response_code(502);
   echo json_encode(['error' => 'The live aircraft data provider is temporarily unavailable. Please retry shortly.']);
