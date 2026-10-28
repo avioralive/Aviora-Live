@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import {
   Activity, ArrowDownRight, ArrowUpRight, Bell, ChevronDown, CircleHelp,
   Compass, Crosshair, Globe2, Layers3, MapPin, Menu, Plane, Radio,
@@ -146,7 +146,7 @@ function App() {
   )
 }
 
-function StatCard({ label, value, change, trend, detail, icon }: { label: string; value: string; change: string; trend: 'up' | 'down'; detail: string; icon: React.ReactNode }) {
+function StatCard({ label, value, change, trend, detail, icon }: { label: string; value: string; change: string; trend: 'up' | 'down'; detail: string; icon: ReactNode }) {
   return <div className="stat-card"><div className="stat-top"><span>{label}</span><span className="stat-icon">{icon}</span></div><div className="stat-value">{value}</div><div className="stat-bottom"><span className={`stat-change ${trend === 'down' ? 'change-good' : ''}`}>{trend === 'down' ? <ArrowDownRight size={13} /> : <ArrowUpRight size={13} />}{change}</span><span>{detail}</span></div><div className="stat-spark"><svg viewBox="0 0 100 25" preserveAspectRatio="none"><path d={trend === 'down' ? 'M0 19 L12 17 L22 20 L35 10 L45 15 L57 8 L70 13 L83 4 L100 7' : 'M0 21 L12 17 L22 19 L35 10 L45 14 L57 6 L70 11 L83 3 L100 5'} fill="none" stroke="currentColor" strokeWidth="1.5" /></svg></div></div>
 }
 
