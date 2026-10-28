@@ -32,7 +32,7 @@ jobs:
       - name: Upload built website to InfinityFree
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ftpupload.net
+          server: ftp.infinityfree.com
           username: ${{ secrets.INFINITY_FTP_USERNAME }}
           password: ${{ secrets.INFINITY_FTP_PASSWORD }}
           protocol: ftps
